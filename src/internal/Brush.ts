@@ -1,5 +1,6 @@
 export default class Brush {
   readonly ctx: CanvasRenderingContext2D;
+
   public mouseX: number;
   public mouseY: number;
 

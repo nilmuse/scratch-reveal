@@ -11,13 +11,13 @@
 </div>
 <br>
 
-➠ **Install**
+# Install
 ```console
 yarn add scratch-reveal
 ```
 <br>
 
-➠ **Register**
+# Register
 ```ts
 // registers <scratch-reveal>
 import { registerScratchRevealElement } from 'scratch-reveal';
@@ -32,7 +32,7 @@ app.mount('#app');
 ```
 <br>
 
-➠ **Usage (HTML)**
+# Usage (HTML)
 ```html
 <scratch-reveal
   width="300"
@@ -46,7 +46,7 @@ app.mount('#app');
 ```
 <br>
 
-➠ **Auto-size (follow parent/container size)**
+# Auto-size (follow parent/container size)
 ```html
 <div style="width: 420px; height: 240px;">
   <scratch-reveal
@@ -63,7 +63,7 @@ app.mount('#app');
 
 <br>
 
-➠ **Events**
+# Events
 ```js
 const el = document.querySelector('scratch-reveal');
 el.addEventListener('progress', (event) => {
@@ -78,11 +78,13 @@ el.addEventListener('error', (event) => {
 ```
 — `progress` (detail: `{ percent: number }`)  
 — `complete` (detail: `{ percent: 100 }`)  
-— `error` (detail: `{ message: string }`)
+— `error` (detail: `{ message: string }`)  
+  
+**Note**: events are dispatched with `bubbles: true` and `composed: true`, so they can be listened to outside of Shadow DOM (e.g. when `<scratch-reveal>` is used inside another Web Component).
 
 <br>
 
-➠ **Attributes**
+# Attributes
 
 |        Attribute         |        Type        |                   Default                    | Description                                                                                              |
 |:------------------------:|:------------------:|:--------------------------------------------:|:---------------------------------------------------------------------------------------------------------|
@@ -94,7 +96,7 @@ el.addEventListener('error', (event) => {
 |     `background-src`     |      `string`      |                    —                         | Background beneath the mask (**required**).                                                              |
 <br>
 
-➠ **Styles**
+# Styles
 - Shadow styles via constructable stylesheet with `<style>` fallback for older browsers.
 - Reuse the shipped CSS text:  
   ```ts
@@ -103,12 +105,12 @@ el.addEventListener('error', (event) => {
   ```
 <br>
 
-➠ **Vue 3.5+**
+# Vue 3.5+
 - Register the custom element (see above).  
 - Optionally set `isCustomElement` in `vite.config.ts` for Volar/templates, or rely on the shipped `src/vue.d.ts` (global component `scratch-reveal`).
 
 <br>
 
-➠ **License**
+# License
 
 MIT

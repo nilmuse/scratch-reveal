@@ -142,6 +142,7 @@ class ScratchReveal {
 
     this.percent = 0;
     this.ctx.globalCompositeOperation = 'source-over';
+
     this.drawMask();
   }
 
@@ -284,6 +285,7 @@ class ScratchReveal {
 
   private finish(event?: PointerEvent, onPointerMove?: (event: PointerEvent) => void) {
     if (this.done) return;
+
     if (this.percent > this.config.percentToFinish) {
       this.done = true;
       this._canvas.style.pointerEvents = 'none';
@@ -490,10 +492,22 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
         imageMaskSrc,
         imageBackgroundSrc,
         onProgress: (percent) => {
-          this.dispatchEvent(new CustomEvent('progress', { detail: { percent } }));
+          this.dispatchEvent(
+            new CustomEvent('progress', {
+              detail: { percent },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         },
         onComplete: () => {
-          this.dispatchEvent(new CustomEvent('complete', { detail: { percent: 100 } }));
+          this.dispatchEvent(
+            new CustomEvent('complete', {
+              detail: { percent: 100 },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         },
       });
 
@@ -511,6 +525,7 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
           if (this.hasAttribute('width') && this.hasAttribute('height')) {
             this.resizeObserver?.disconnect();
             this.resizeObserver = undefined;
+
             return;
           }
 
@@ -543,7 +558,14 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
 
       if (this.lastErrorMessage !== message) {
         this.lastErrorMessage = message;
-        this.dispatchEvent(new CustomEvent('error', { detail: { message } }));
+
+        this.dispatchEvent(
+          new CustomEvent('error', {
+            detail: { message },
+            bubbles: true,
+            composed: true,
+          }),
+        );
       }
     }
   }

@@ -38,22 +38,24 @@ app.mount('#app');
   width="300"
   height="300"
   complete-percent="60"
-  brush-src="/demo/assets/brush.png"
+  show-status
   brush-size="15"
+  brush-src="/demo/assets/brush.png"
   mask-src="/demo/assets/scratch-reveal.png"
   background-src="/demo/assets/scratch-reveal-background.svg"
 ></scratch-reveal>
 ```
 <br>
 
-# Auto-size (follow parent/container size)
+### Auto-size (follow parent/container size)
 ```html
 <div style="width: 420px; height: 240px;">
   <scratch-reveal
     style="width: 100%; height: 100%;"
     complete-percent="60"
-    brush-src="/demo/assets/brush.png"
+    show-status
     brush-size="12"
+    brush-src="/demo/assets/brush.png"
     mask-src="/demo/assets/scratch-reveal.png"
     background-src="/demo/assets/scratch-reveal-background.svg"
   ></scratch-reveal>
@@ -85,15 +87,15 @@ el.addEventListener('error', (event) => {
 <br>
 
 # Attributes
-
-|        Attribute         |        Type        |                   Default                    | Description                                                                                              |
-|:------------------------:|:------------------:|:--------------------------------------------:|:---------------------------------------------------------------------------------------------------------|
-|    `width` / `height`    |      `number`      |                    `300`                     | Container/mask size in px. If omitted, size follows layout (auto-size).                                  |
-|   `complete-percent`     |      `number`      |                     `60`                     | Percent cleared to consider done.                                                                        |
-|       `brush-src`        |      `string`      |                    —                         | Brush image (**required**).                                                                              |
-|       `brush-size`       | `string \| number` |                     `0`                      | Brush width: numbers mean percent of min(canvas width, height) (e.g., `12` = 12%). Use `80px` for px. `0` = natural image size. |
-|        `mask-src`        |      `string`      |                    —                         | Top mask (scratched away) (**required**).                                                                |
-|     `background-src`     |      `string`      |                    —                         | Background beneath the mask (**required**).                                                              |
+|        Attribute         |        Type        |  Default  | Description                                                                                                                     |
+|:------------------------:|:------------------:|:---------:|:--------------------------------------------------------------------------------------------------------------------------------|
+|    `width` / `height`    |      `number`      |   `300`   | Container/mask size in px. If omitted, size follows layout (auto-size).                                                         |
+|   `complete-percent`     |      `number`      |   `60`    | Percent cleared to consider done.                                                                                               |
+|       `brush-src`        |      `string`      |     —     | Brush image (**required**).                                                                                                     |
+|       `brush-size`       | `string \| number` |    `0`    | Brush width: numbers mean percent of min(canvas width, height) (e.g., `12` = 12%). Use `80px` for px. `0` = natural image size. |
+|        `mask-src`        |      `string`      |     —     | Top mask (scratched away) (**required**).                                                                                       |
+|     `background-src`     |      `string`      |     —     | Background beneath the mask (**required**).                                                                                     |
+|      `show-status`       |     `boolean`      |     —     | Optional: render status message for missing attrs / errors (good for dev).                                                      |
 <br>
 
 # Styles
@@ -112,5 +114,4 @@ el.addEventListener('error', (event) => {
 <br>
 
 # License
-
 MIT

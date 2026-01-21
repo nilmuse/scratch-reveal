@@ -42,6 +42,7 @@ class ScratchReveal {
   readonly ctx: CanvasRenderingContext2D;
   readonly container: HTMLElement;
   private readonly _canvas: HTMLCanvasElement;
+  private dpr = 1;
   private brush: Brush;
   private maskImage?: HTMLImageElement;
   private backgroundImage?: HTMLImageElement;
@@ -73,6 +74,7 @@ class ScratchReveal {
     this.ctx = this._canvas.getContext('2d', {
       willReadFrequently: true,
     }) as CanvasRenderingContext2D;
+    this.setCanvasScale(this.config.width, this.config.height);
     this.brush = new Brush(this.ctx, 0, 0);
     this.brushSize = this.config.brushSize;
     this.container.appendChild(this._canvas);
@@ -119,26 +121,34 @@ class ScratchReveal {
     return this.percent;
   }
 
-  private createCanvas(width: number, height: number) {
+  private createCanvas(_width: number, _height: number) {
     const canvas = document.createElement('canvas');
 
     canvas.className = 'sr__canvas';
-    canvas.width = width;
-    canvas.height = height;
     canvas.style.width = '100%';
     canvas.style.height = '100%';
 
     return canvas;
   }
 
+  private setCanvasScale(width: number, height: number) {
+    const nextDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
+
+    this.dpr = nextDpr;
+    this._canvas.width = Math.round(width * this.dpr);
+    this._canvas.height = Math.round(height * this.dpr);
+
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+  }
+
   resize(width: number, height: number) {
     if (this.destroyed) return;
     if (this.done) return;
     if (width <= 0 || height <= 0) return;
-    if (this._canvas.width === width && this._canvas.height === height) return;
+    if (this._canvas.width === width * this.dpr && this._canvas.height === height * this.dpr)
+      return;
 
-    this._canvas.width = width;
-    this._canvas.height = height;
+    this.setCanvasScale(width, height);
 
     this.percent = 0;
     this.ctx.globalCompositeOperation = 'source-over';
@@ -227,8 +237,8 @@ class ScratchReveal {
     const rect = this._canvas.getBoundingClientRect();
     const scaleX = rect.width ? this._canvas.width / rect.width : 1;
     const scaleY = rect.height ? this._canvas.height / rect.height : 1;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const x = ((event.clientX - rect.left) * scaleX) / this.dpr;
+    const y = ((event.clientY - rect.top) * scaleY) / this.dpr;
 
     this.brush.updateMousePosition(x, y);
   }
@@ -237,8 +247,14 @@ class ScratchReveal {
     if (!this.maskImage) return;
 
     this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-    this.ctx.drawImage(this.maskImage, 0, 0, this._canvas.width, this._canvas.height);
+    this.ctx.clearRect(0, 0, this._canvas.width / this.dpr, this._canvas.height / this.dpr);
+    this.ctx.drawImage(
+      this.maskImage,
+      0,
+      0,
+      this._canvas.width / this.dpr,
+      this._canvas.height / this.dpr,
+    );
   }
 
   private setBackground() {
@@ -329,7 +345,7 @@ class ScratchReveal {
   }
 
   clear() {
-    this.ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    this.ctx.clearRect(0, 0, this._canvas.width / this.dpr, this._canvas.height / this.dpr);
   }
 }
 
@@ -369,6 +385,7 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
     private readonly container: HTMLDivElement;
     private readonly styleEl: HTMLStyleElement | null = null;
     private rebuildScheduled = false;
+    private rebuildToken = 0;
     private resizeObserver?: ResizeObserver;
     private lastErrorMessage: string | null = null;
 
@@ -381,6 +398,7 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
         'brush-size',
         'mask-src',
         'background-src',
+        'show-status',
       ];
     }
 
@@ -415,8 +433,38 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
       this.resizeObserver = undefined;
     }
 
-    attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null) {
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
       if (oldValue === newValue) return;
+
+      if (name === 'brush-size' && this.instance) {
+        const { width, height } = this.resolveSize();
+        const brushSize = parseBrushSizeToPx(
+          this.getAttribute('brush-size'),
+          width,
+          height,
+          DEFAULTS.brushSize,
+        );
+        this.instance.setBrushSize(brushSize);
+        return;
+      }
+
+      if ((name === 'width' || name === 'height') && this.instance) {
+        const size = this.resolveSize();
+
+        this.syncContainerSize(size);
+        this.instance.resize(size.width, size.height);
+
+        const brushSize = parseBrushSizeToPx(
+          this.getAttribute('brush-size'),
+          size.width,
+          size.height,
+          DEFAULTS.brushSize,
+        );
+
+        this.instance.setBrushSize(brushSize);
+        this.updateResizeObserver(size);
+        return;
+      }
 
       this.scheduleRebuild();
     }
@@ -431,37 +479,15 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
 
         if (!this.isConnected) return;
 
-        this.rebuild();
+        void this.rebuild();
       });
     }
 
-    private rebuild() {
-      this.container.replaceChildren();
-      this.instance?.destroy();
-
-      const hasWidthAttr = this.hasAttribute('width');
-      const hasHeightAttr = this.hasAttribute('height');
-
-      const hostRect = this.getBoundingClientRect();
-      const autoWidth = Math.round(hostRect.width);
-      const autoHeight = Math.round(hostRect.height);
-
-      const width = hasWidthAttr ? Number(this.getAttribute('width')) : autoWidth || DEFAULTS.width;
-      const height = hasHeightAttr
-        ? Number(this.getAttribute('height'))
-        : autoHeight || DEFAULTS.height;
-      const percentToFinish = Number(
-        this.getAttribute('complete-percent') ?? DEFAULTS.percentToFinish,
-      );
-      const brushSrc = (this.getAttribute('brush-src') ?? '').trim();
-      const brushSize = parseBrushSizeToPx(
-        this.getAttribute('brush-size'),
-        width,
-        height,
-        DEFAULTS.brushSize,
-      );
-      const imageMaskSrc = (this.getAttribute('mask-src') ?? '').trim();
-      const imageBackgroundSrc = (this.getAttribute('background-src') ?? '').trim();
+    private async rebuild() {
+      const token = ++this.rebuildToken;
+      const size = this.resolveSize();
+      const percentToFinish = this.resolvePercentToFinish();
+      const { brushSrc, imageMaskSrc, imageBackgroundSrc } = this.resolveSources();
 
       const missing: string[] = [];
 
@@ -470,22 +496,57 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
       if (!imageBackgroundSrc) missing.push('background-src');
 
       if (missing.length) {
-        const message = `ScratchReveal: missing required attribute(s): ${missing.join(', ')}`;
-
-        this.renderError(message);
-
+        this.syncContainerSize(size);
+        this.renderWaiting(missing);
+        this.updateResizeObserver(size);
         return;
       }
 
-      if (hasWidthAttr) this.container.style.width = `${width}px`;
-      else this.container.style.width = '100%';
+      let effectiveSize = size;
 
-      if (hasHeightAttr) this.container.style.height = `${height}px`;
-      else this.container.style.height = '100%';
+      if (
+        !size.hasWidthAttr &&
+        !size.hasHeightAttr &&
+        size.autoWidth === 0 &&
+        size.autoHeight === 0
+      ) {
+        try {
+          const mask = await loadImage(imageMaskSrc);
+
+          if (token !== this.rebuildToken || !this.isConnected) return;
+
+          const naturalWidth = mask.naturalWidth || mask.width;
+          const naturalHeight = mask.naturalHeight || mask.height;
+
+          if (naturalWidth > 0 && naturalHeight > 0) {
+            effectiveSize = {
+              ...size,
+              width: naturalWidth,
+              height: naturalHeight,
+            };
+          }
+        } catch {
+          // fallback to current size
+        }
+      }
+
+      this.syncContainerSize(effectiveSize);
+
+      const brushSize = parseBrushSizeToPx(
+        this.getAttribute('brush-size'),
+        effectiveSize.width,
+        effectiveSize.height,
+        DEFAULTS.brushSize,
+      );
+
+      this.container.replaceChildren();
+      this.instance?.destroy();
+      this.instance = undefined;
+      this.lastErrorMessage = null;
 
       this.instance = new ScratchReveal(this.container, {
-        width,
-        height,
+        width: effectiveSize.width,
+        height: effectiveSize.height,
         percentToFinish,
         brushSrc,
         brushSize,
@@ -517,7 +578,95 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
         this.renderError(message);
       });
 
-      const needsAutoSize = !hasWidthAttr || !hasHeightAttr;
+      this.updateResizeObserver(effectiveSize);
+    }
+
+    private renderError(message: string) {
+      this.instance?.destroy();
+      this.instance = undefined;
+      this.renderStatus(message, 'error');
+
+      if (this.lastErrorMessage !== message) {
+        this.lastErrorMessage = message;
+
+        this.dispatchEvent(
+          new CustomEvent('error', {
+            detail: { message },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    }
+
+    private renderWaiting(missing: string[]) {
+      const message = `ScratchReveal: waiting for required attribute(s): ${missing.join(', ')}`;
+      this.renderStatus(message, 'waiting');
+    }
+
+    private renderStatus(message: string, kind: 'error' | 'waiting') {
+      this.container.replaceChildren();
+      this.instance?.destroy();
+      this.instance = undefined;
+
+      if (!this.hasAttribute('show-status')) return;
+
+      const status = document.createElement('div');
+      status.className = `sr__status sr__status--${kind}`;
+      status.textContent = message;
+      status.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+
+      this.container.appendChild(status);
+    }
+
+    private resolveSize() {
+      const hasWidthAttr = this.hasAttribute('width');
+      const hasHeightAttr = this.hasAttribute('height');
+
+      const hostRect = this.getBoundingClientRect();
+      const autoWidth = Math.round(hostRect.width);
+      const autoHeight = Math.round(hostRect.height);
+
+      const widthAttr = Number(this.getAttribute('width'));
+      const heightAttr = Number(this.getAttribute('height'));
+
+      const width =
+        hasWidthAttr && Number.isFinite(widthAttr) ? widthAttr : autoWidth || DEFAULTS.width;
+      const height =
+        hasHeightAttr && Number.isFinite(heightAttr) ? heightAttr : autoHeight || DEFAULTS.height;
+
+      return { hasWidthAttr, hasHeightAttr, width, height, autoWidth, autoHeight };
+    }
+
+    private resolvePercentToFinish() {
+      const raw = Number(this.getAttribute('complete-percent'));
+
+      return Number.isFinite(raw) ? raw : DEFAULTS.percentToFinish;
+    }
+
+    private resolveSources() {
+      return {
+        brushSrc: (this.getAttribute('brush-src') ?? '').trim(),
+        imageMaskSrc: (this.getAttribute('mask-src') ?? '').trim(),
+        imageBackgroundSrc: (this.getAttribute('background-src') ?? '').trim(),
+      };
+    }
+
+    private syncContainerSize(size: {
+      hasWidthAttr: boolean;
+      hasHeightAttr: boolean;
+      width: number;
+      height: number;
+    }) {
+      if (size.hasWidthAttr) this.container.style.width = `${size.width}px`;
+      else this.container.style.width = '100%';
+
+      if (size.hasHeightAttr) this.container.style.height = `${size.height}px`;
+      else this.container.style.height = '100%';
+    }
+
+    private updateResizeObserver(size: { hasWidthAttr: boolean; hasHeightAttr: boolean }) {
+      const needsAutoSize = !size.hasWidthAttr || !size.hasHeightAttr;
 
       if (needsAutoSize && 'ResizeObserver' in window) {
         this.resizeObserver?.disconnect();
@@ -549,23 +698,6 @@ export function registerScratchRevealElement(tagName = 'scratch-reveal') {
       } else {
         this.resizeObserver?.disconnect();
         this.resizeObserver = undefined;
-      }
-    }
-
-    private renderError(message: string) {
-      this.instance?.destroy();
-      this.instance = undefined;
-
-      if (this.lastErrorMessage !== message) {
-        this.lastErrorMessage = message;
-
-        this.dispatchEvent(
-          new CustomEvent('error', {
-            detail: { message },
-            bubbles: true,
-            composed: true,
-          }),
-        );
       }
     }
   }

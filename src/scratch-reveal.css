@@ -28,6 +28,31 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.sr__status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #4b5563;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.sr__status--error {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.95);
+}
+
 scratch-reveal {
   display: inline-block;
   width: 100%;

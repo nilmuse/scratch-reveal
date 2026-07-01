@@ -1,7 +1,8 @@
 import Brush from './internal/Brush';
 import { loadImage, rafThrottle } from './internal/utils';
 import type { ScratchRevealOptions } from './options';
-import DEFAULT_CSS_TEXT from './scratch-reveal.css?raw';
+import './scratch-reveal.css';
+import DEFAULT_CSS_TEXT from './scratch-reveal.css?inline';
 
 export const scratchRevealCssText = DEFAULT_CSS_TEXT;
 

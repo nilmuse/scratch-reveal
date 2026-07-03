@@ -139,7 +139,36 @@ installScratchReveal(app);
 app.mount('#app');
 ```
 
-For Volar/templates, set `isCustomElement` in `vite.config.ts`, or rely on the shipped `src/vue.d.ts` (global component `scratch-reveal`).
+For Volar/templates in a Vite app, mark the tag as a custom element in **your** `vite.config.ts`:
+
+```ts
+import vue from '@vitejs/plugin-vue';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag === 'scratch-reveal',
+        },
+      },
+    }),
+  ],
+});
+```
+
+Or add a local module augmentation (for example `scratch-reveal.d.ts`):
+
+```ts
+import type { ComponentPublicInstance } from 'vue';
+
+declare module 'vue' {
+  export interface GlobalComponents {
+    'scratch-reveal': ComponentPublicInstance;
+  }
+}
+```
 
 ## License
 

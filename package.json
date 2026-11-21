@@ -1,18 +1,18 @@
 {
   "name": "scratch-reveal",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Scratch & reveal Web Component: mask + background with brush-only reveal, Vue-friendly, shadow-styled.",
   "type": "module",
-  "author": "ux-ui.pro",
+  "author": "Maxim <m@nilmuse.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ux-ui-pro/scratch-reveal.git"
+    "url": "git+https://github.com/nilmuse/scratch-reveal.git"
   },
   "bugs": {
-    "url": "https://github.com/ux-ui-pro/scratch-reveal/issues"
+    "url": "https://github.com/nilmuse/scratch-reveal/issues"
   },
-  "homepage": "https://github.com/ux-ui-pro/scratch-reveal",
+  "homepage": "https://github.com/nilmuse/scratch-reveal",
   "sideEffects": [
     "*.css"
   ],
